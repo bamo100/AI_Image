@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 // import { clerkClient } from "@clerk/nextjs";
-import { WebhookEvent, createClerkClient } from "@clerk/nextjs/server";
+import { WebhookEvent, createClerkClient, clerkClient } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { Webhook } from "svix";
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
   let evt: WebhookEvent;
 
-  const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
+  //const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
   // Verify the payload with the headers
   try {
     evt = wh.verify(body, {
@@ -60,7 +60,9 @@ export async function POST(req: Request) {
 
   // CREATE
   if (eventType === "user.created") {
+    console.log(evt.data)
     const { id, email_addresses, image_url, first_name, last_name, username } = evt.data;
+    console.log(email_addresses)
 
     const user = {
       clerkId: id,
