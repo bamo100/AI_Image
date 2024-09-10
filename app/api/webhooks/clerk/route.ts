@@ -1,11 +1,14 @@
-import { Webhook } from "svix";
+/* eslint-disable camelcase */
+// import { clerkClient } from "@clerk/nextjs";
+import { WebhookEvent, createClerkClient, clerkClient } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
-import { clerkClient, WebhookEvent } from "@clerk/nextjs/server";
-import { createUser } from "@/lib/actions/user.actions";
 import { NextResponse } from "next/server";
+import { Webhook } from "svix";
+
+import { createUser, deleteUser, updateUser } from "@/lib/actions/user.actions";
 
 export async function POST(req: Request) {
-  // You can find this in the Clerk Dashboard -> Webhooks -> choose the endpoint
+  // You can find this in the Clerk Dashboard -> Webhooks -> choose the webhook
   const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
 
   if (!WEBHOOK_SECRET) {
@@ -36,6 +39,7 @@ export async function POST(req: Request) {
 
   let evt: WebhookEvent;
 
+  //const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
   // Verify the payload with the headers
   try {
     evt = wh.verify(body, {
@@ -50,38 +54,64 @@ export async function POST(req: Request) {
     });
   }
 
-  // Do something with the payload
-  // For this guide, you simply log the payload to the console
+  // Get the ID and type
   const { id } = evt.data;
   const eventType = evt.type;
 
+  // CREATE
   if (eventType === "user.created") {
-    const { id, email_addresses, image_url, first_name, last_name, username } =
-      evt.data;
+    console.log(evt.data)
+    const { id, email_addresses, image_url, first_name, last_name, username } = evt.data;
+    console.log(email_addresses)
 
     const user = {
       clerkId: id,
       email: email_addresses[0].email_address,
       username: username!,
-      photo: image_url!,
       firstName: first_name,
       lastName: last_name,
+      photo: image_url,
     };
-
-    console.log(user);
 
     const newUser = await createUser(user);
 
+    // Set public metadata
     if (newUser) {
-      await clerkClient.users.updateUserMetadata(id, {
+      await clerkClient.users.updateUserMetadata(id, {  
         publicMetadata: {
           userId: newUser._id,
         },
       });
     }
 
-    return NextResponse.json({ message: "New user created", user: newUser });
+    return NextResponse.json({ message: "OK", user: newUser });
   }
+
+  // UPDATE
+  if (eventType === "user.updated") {
+    const { id, image_url, first_name, last_name, username } = evt.data;
+
+    const user = {
+      firstName: first_name,
+      lastName: last_name,
+      username: username!,
+      photo: image_url,
+    };
+
+    const updatedUser = await updateUser(id, user);
+
+    return NextResponse.json({ message: "OK", user: updatedUser });
+  }
+
+  // DELETE
+  if (eventType === "user.deleted") {
+    const { id } = evt.data;
+
+    const deletedUser = await deleteUser(id!);
+
+    return NextResponse.json({ message: "OK", user: deletedUser });
+  }
+
   console.log(`Webhook with and ID of ${id} and type of ${eventType}`);
   console.log("Webhook body:", body);
 
