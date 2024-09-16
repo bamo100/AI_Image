@@ -34,7 +34,7 @@ export const formSchema = z.object({
   title: z.string(),
   aspectRatio: z.string().optional(),
   color: z.string().optional(),
-  propmpt: z.string().optional(),
+  prompt: z.string().optional(),
   publicId: z.string(),
 })
 
@@ -221,8 +221,8 @@ const TransformationForm = ({action, data=null, userId, type, creditBalance, con
             type={type}
             title={form.getValues().title}
             isTransforming={isTransforming}
-            setIsTramsforming={setIsTransforming}
-            transformationconfig={transformationConfig}
+            setIsTransforming={setIsTransforming}
+            transformationConfig={transformationConfig}
           />
         </div>
 
